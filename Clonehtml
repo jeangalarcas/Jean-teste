@@ -1,0 +1,14 @@
+# Clone seu repositório
+git clone https://github.com/jeangalarcas/Jean-teste.git
+
+# Crie o arquivo index.html
+cd Jean-teste
+touch index.html
+
+# Cole o código no arquivo (copie do código anterior)
+nano index.html  # ou use seu editor favorito
+
+# Faça commit e push
+git add index.html
+git commit -m "Adiciona MVP da plataforma"
+git push origin main
