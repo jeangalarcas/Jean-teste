@@ -1,1 +1,3 @@
-
+git add .nojekyll
+git commit -m "Desativa processamento Jekyll"
+git push origin main
