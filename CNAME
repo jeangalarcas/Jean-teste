@@ -1,0 +1,2 @@
+echo "jeangalarcas.github.io" > CNAME
+git add CNAME
