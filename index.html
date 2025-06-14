@@ -1,14 +1,289 @@
-# Clone seu repositório
-git clone https://github.com/jeangalarcas/Jean-teste.git
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoImóveis RS/SC - Mercado Imobiliário em Tempo Real</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #f0f2f5; color: #333; }
+        header { background: linear-gradient(135deg, #1e5799 0%, #207cca 100%); color: white; padding: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .container { display: flex; height: calc(100vh - 70px); }
+        #map { flex: 3; height: 100%; z-index: 1; }
+        .sidebar { flex: 1; max-width: 400px; background: white; padding: 1rem; overflow-y: auto; box-shadow: -2px 0 10px rgba(0,0,0,0.1); }
+        .filters { background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .filter-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e5799; }
+        select, input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+        .property-card { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-left: 4px solid #4CAF50; transition: transform 0.2s; }
+        .property-card.highlight { border-left: 4px solid #FF9800; background: #fff8e1; }
+        .property-card h3 { color: #1e5799; margin-bottom: 0.5rem; }
+        .property-info { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+        .price { font-weight: bold; font-size: 1.2rem; color: #e91e63; }
+        .opportunity-badge { background: #4CAF50; color: white; padding: 0.3rem 0.5rem; border-radius: 4px; font-size: 0.8rem; display: inline-block; margin-top: 0.5rem; }
+        .opportunity-badge.high { background: #FF9800; }
+        .last-update { text-align: center; padding: 0.5rem; background: #e3f2fd; border-radius: 4px; margin-top: 1rem; font-size: 0.9rem; }
+        .legend { background: white; padding: 1rem; border-radius: 8px; margin-top: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .legend-item { display: flex; align-items: center; margin-bottom: 0.5rem; }
+        .legend-color { width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; }
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .sidebar { max-width: 100%; max-height: 40vh; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>GeoImóveis RS/SC</h1>
+        <p>Mercado imobiliário em tempo real - Porto Alegre e Litoral Catarinense</p>
+    </header>
+    
+    <div class="container">
+        <div id="map"></div>
+        
+        <div class="sidebar">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="property-type">Tipo de Imóvel</label>
+                    <select id="property-type">
+                        <option value="all">Todos</option>
+                        <option value="house">Casas</option>
+                        <option value="apartment">Apartamentos</option>
+                        <option value="commercial">Comercial</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="price-range">Faixa de Preço (R$)</label>
+                    <select id="price-range">
+                        <option value="all">Todos</option>
+                        <option value="0-300000">Até R$ 300.000</option>
+                        <option value="300000-600000">R$ 300.000 - 600.000</option>
+                        <option value="600000-1000000">R$ 600.000 - 1.000.000</option>
+                        <option value="1000000+">Acima de R$ 1.000.000</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="opportunity">Oportunidade</label>
+                    <select id="opportunity">
+                        <option value="all">Todas</option>
+                        <option value="high">Alta Oportunidade</option>
+                        <option value="medium">Média Oportunidade</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="property-list">
+                <!-- Os imóveis serão carregados aqui via JavaScript -->
+            </div>
+            
+            <div class="legend">
+                <h3>Legenda do Mapa</h3>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #4CAF50;"></div>
+                    <span>Alta oportunidade (valor abaixo do mercado)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #FF9800;"></div>
+                    <span>Média oportunidade</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #F44336;"></div>
+                    <span>Valor acima da média</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #9E9E9E;"></div>
+                    <span>Valor de mercado</span>
+                </div>
+            </div>
+            
+            <div class="last-update">
+                <strong>Última atualização:</strong> <span id="last-update-time">Carregando...</span>
+            </div>
+        </div>
+    </div>
 
-# Crie o arquivo index.html
-cd Jean-teste
-touch index.html
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Dados de exemplo
+        const sampleProperties = [
+            {
+                id: 1,
+                title: "Apartamento Centro Histórico POA",
+                type: "apartment",
+                price: 480000,
+                area: 75,
+                lat: -30.0311,
+                lng: -51.2345,
+                address: "Rua dos Andradas, 1000",
+                city: "Porto Alegre",
+                valuePerM2: 6400,
+                marketAvg: 7200,
+                opportunity: "high",
+                description: "Excelente apartamento com vista para o Guaíba, 2 quartos, vaga de garagem."
+            },
+            {
+                id: 2,
+                title: "Casa com Piscina em Florianópolis",
+                type: "house",
+                price: 1250000,
+                area: 180,
+                lat: -27.5935,
+                lng: -48.5585,
+                address: "Rua das Palmeiras, 250",
+                city: "Florianópolis",
+                valuePerM2: 6944,
+                marketAvg: 8500,
+                opportunity: "high",
+                description: "Casa moderna com piscina, próximo às praias do sul da ilha."
+            },
+            {
+                id: 3,
+                title: "Cobertura Moinhos de Vento",
+                type: "apartment",
+                price: 2200000,
+                area: 210,
+                lat: -30.0277,
+                lng: -51.2287,
+                address: "Av. Goethe, 600",
+                city: "Porto Alegre",
+                valuePerM2: 10476,
+                marketAvg: 9800,
+                opportunity: "low",
+                description: "Cobertura de luxo com vista panorâmica, 3 suítes, varanda gourmet."
+            },
+            {
+                id: 4,
+                title: "Terreno Balneário Camboriú",
+                type: "land",
+                price: 950000,
+                area: 300,
+                lat: -26.9909,
+                lng: -48.6342,
+                address: "Av. Atlântica, 1500",
+                city: "Balneário Camboriú",
+                valuePerM2: 3166,
+                marketAvg: 4000,
+                opportunity: "medium",
+                description: "Terreno plano a 500m da praia central, excelente localização."
+            }
+        ];
 
-# Cole o código no arquivo (copie do código anterior)
-nano index.html  # ou use seu editor favorito
+        // Inicializar o mapa
+        const map = L.map('map').setView([-30.0311, -51.2345], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
 
-# Faça commit e push
-git add index.html
-git commit -m "Adiciona MVP da plataforma"
-git push origin main
+        // Marcadores e lista de propriedades
+        const markers = [];
+        const propertyList = document.getElementById('property-list');
+        const lastUpdateTime = document.getElementById('last-update-time');
+
+        // Função para atualizar a interface
+        function updateUI(properties) {
+            propertyList.innerHTML = '';
+            markers.forEach(marker => map.removeLayer(marker));
+            markers.length = 0;
+            
+            properties.forEach(property => {
+                const markerColor = getMarkerColor(property.opportunity);
+                const marker = L.circleMarker([property.lat, property.lng], {
+                    radius: 8,
+                    fillColor: markerColor,
+                    color: '#000',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <h3>${property.title}</h3>
+                    <p><strong>Valor:</strong> R$ ${property.price.toLocaleString('pt-BR')}</p>
+                    <p><strong>Área:</strong> ${property.area}m²</p>
+                    <p><strong>Valor/m²:</strong> R$ ${property.valuePerM2.toLocaleString('pt-BR')}</p>
+                    <p><strong>Média região:</strong> R$ ${property.marketAvg.toLocaleString('pt-BR')}</p>
+                    <p><strong>Oportunidade:</strong> ${getOpportunityText(property.opportunity)}</p>
+                `);
+                
+                markers.push(marker);
+                
+                const propertyCard = document.createElement('div');
+                propertyCard.className = `property-card ${property.opportunity === 'high' ? 'highlight' : ''}`;
+                propertyCard.innerHTML = `
+                    <h3>${property.title}</h3>
+                    <div class="property-info">
+                        <div>
+                            <div>${property.address}, ${property.city}</div>
+                            <div>${property.area}m² | ${property.type === 'apartment' ? 'Apartamento' : 
+                                property.type === 'house' ? 'Casa' : 'Terreno'}</div>
+                        </div>
+                        <div class="price">R$ ${property.price.toLocaleString('pt-BR')}</div>
+                    </div>
+                    <div class="property-info">
+                        <div>Valor/m²: R$ ${property.valuePerM2.toLocaleString('pt-BR')}</div>
+                        <div>Média: R$ ${property.marketAvg.toLocaleString('pt-BR')}</div>
+                    </div>
+                    <div class="opportunity-badge ${property.opportunity === 'high' ? 'high' : ''}">
+                        ${getOpportunityText(property.opportunity)}
+                    </div>
+                `;
+                
+                propertyCard.addEventListener('click', () => {
+                    map.setView([property.lat, property.lng], 15);
+                    marker.openPopup();
+                });
+                
+                propertyList.appendChild(propertyCard);
+            });
+        }
+
+        // Funções auxiliares
+        function getMarkerColor(opportunity) {
+            switch(opportunity) {
+                case 'high': return '#4CAF50';
+                case 'medium': return '#FF9800';
+                case 'low': return '#F44336';
+                default: return '#9E9E9E';
+            }
+        }
+
+        function getOpportunityText(opportunity) {
+            switch(opportunity) {
+                case 'high': return '⭐ OPORTUNIDADE (valor abaixo do mercado)';
+                case 'medium': return '💡 BOA OFERTA (valor próximo da média)';
+                case 'low': return '⚠️ ACIMA DA MÉDIA';
+                default: return '💲 PREÇO EQUILIBRADO';
+            }
+        }
+
+        // Atualizar dados a cada 10 minutos
+        function fetchData() {
+            const now = new Date();
+            lastUpdateTime.textContent = now.toLocaleTimeString('pt-BR');
+            
+            const updatedProperties = sampleProperties.map(prop => {
+                return {
+                    ...prop,
+                    price: prop.price * (1 + (Math.random() * 0.05 - 0.025)),
+                    valuePerM2: prop.valuePerM2 * (1 + (Math.random() * 0.03 - 0.015))
+                };
+            });
+            
+            updateUI(updatedProperties);
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            setInterval(fetchData, 10 * 60 * 1000);
+            
+            document.querySelectorAll('select').forEach(select => {
+                select.addEventListener('change', fetchData);
+            });
+        });
+    </script>
+</body>
+</html>
