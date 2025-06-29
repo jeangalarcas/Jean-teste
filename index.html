@@ -287,25 +287,3 @@
     </script>
 </body>
 </html>
-<script>
-// Redirecionamento emergencial se ocorrer erro 404
-if(document.body.innerHTML.includes("404") || document.title.includes("404")) {
-  document.body.innerHTML = `
-    <h1>GeoImóveis RS/SC</h1>
-    <p>Carregando plataforma...</p>
-    <script>
-      // Forçar recarregamento do conteúdo real
-      fetch('/?timestamp=${new Date().getTime()}')
-        .then(response => response.text())
-        .then(html => {
-          document.open();
-          document.write(html);
-          document.close();
-        })
-        .catch(() => {
-          document.body.innerHTML = '<p>Site carregado com sucesso!</p>';
-        });
-    </script>
-  `;
-}
-</script>
